@@ -8,18 +8,10 @@ const getToken = require("../helpers/get-token");
 const getUserByToken = require("../helpers/get-user-by-token");
 
 module.exports = class UserController {
-  // #swagger.start
   static async register(req, res) {
-    // #swagger.tags = ['User']
-    // #swagger.summary = 'Cadastrar um usuário'
-    /* #swagger.parameters['obj'] = { 
-      in: 'body',
-      description: 'Informações do usuário',
-      schema: { $ref: "#/definitions/Register" }
-    } */
+
     const { name, email, phone, password } = req.body;
 
-    // check if user exists
     const userExists = await User.findOne({ email });
 
     if (userExists) {
@@ -30,11 +22,9 @@ module.exports = class UserController {
       return;
     }
 
-    // create a password
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // create a user
     const user = new User({
       name,
       email,
@@ -47,18 +37,12 @@ module.exports = class UserController {
       await createUserToken(newUser, req, res);
       res.status(201).json({ message: "Usuário criado com sucesso!" });
     } catch (error) {
-      res.status(500).json({ message: error, errors: [error] });
+      res.status(500).json({ message: error });
     }
   }
 
   static async login(req, res) {
-    // #swagger.tags = ['User']
-    // #swagger.summary = 'Logar um usuário'
-    /* #swagger.parameters['obj'] = { 
-      in: 'body',
-      description: 'Informações de login usuário',
-      schema: { $ref: "#/definitions/Login" }
-    } */
+
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
@@ -71,7 +55,6 @@ module.exports = class UserController {
       return;
     }
 
-    // check if password match db password
     const checkPassword = await bcrypt.compare(password, user.password);
 
     if (!checkPassword) {
@@ -85,8 +68,7 @@ module.exports = class UserController {
   }
 
   static async checkUser(req, res) {
-    // #swagger.tags = ['User']
-    // #swagger.summary = 'Checar a permissão usuário'
+
     let currentUser;
 
     try {
@@ -108,8 +90,7 @@ module.exports = class UserController {
   }
   s;
   static async getUserById(req, res) {
-    // #swagger.tags = ['User']
-    // #swagger.summary = 'Pesquisar por um usuário em específico'
+ 
     const id = req.params.id;
 
     const user = await User.findById(id).select("-password");
@@ -126,16 +107,9 @@ module.exports = class UserController {
   }
 
   static async editUser(req, res) {
-    // #swagger.tags = ['User']
-    // #swagger.summary = 'Editar um usuário'
-    /* #swagger.parameters['obj'] = { 
-      in: 'body',
-      description: 'Informações para alteração dos dados do usuário',
-      schema: { $ref: "#/definitions/EditUser" }
-    } */
+  
     const id = req.params.id;
 
-    // check if user exists
     const token = getToken(req);
     const user = await getUserByToken(token);
 
@@ -144,7 +118,6 @@ module.exports = class UserController {
     if (req.file) {
       user.image = req.file.filename;
     }
-    // check if email has already
     const userExists = await User.findOne({ email });
     if (user.email !== email && userExists) {
       res.status(422).json({
@@ -159,14 +132,12 @@ module.exports = class UserController {
       res.status(422).json({ errors: ["As senhas não são iguais"] });
       return;
     } else if (password === confirmPassword && password != null) {
-      // create a password
       const salt = await bcrypt.genSalt(12);
       const passwordHash = await bcrypt.hash(password, salt);
       user.password = passwordHash;
     }
 
     try {
-      // return user update data
       await User.findOneAndUpdate(
         { _id: user.id },
         { $set: user },
@@ -179,5 +150,4 @@ module.exports = class UserController {
       });
     }
   }
-  // #swagger.end
 };
